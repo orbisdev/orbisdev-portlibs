@@ -21,4 +21,5 @@ install:
 	@cp $(OutPath)/$(TargetFile).a $(ORBISDEV)/usr/lib
 	@mkdir -p $(ORBISDEV)/usr/include/freetype-gl
 	@cp include/*.h $(ORBISDEV)/usr/include/freetype-gl
-	@echo "Installed!"
+	@echo "$(TargetFile) Installed!"
+
