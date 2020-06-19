@@ -1,5 +1,5 @@
 
-SUBDIRS = freetype freetype-gl
+SUBDIRS = MiniAPI freetype freetype-gl
 
 all:
 	for dir in $(SUBDIRS); do \
