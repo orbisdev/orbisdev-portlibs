@@ -11,7 +11,7 @@ include $(ORBISDEV)/make/ps4sdklib.mk
 
 CompilerFlags += -nostdinc -nostdlib -D_BSD_SOURCE -D__PS4__
 
-IncludePath += -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/freetype -I$(ORBISDEV)/usr/include/freetype/freetype/config
+IncludePath += -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/orbis/freetype -I$(ORBISDEV)/usr/include/orbis/freetype/freetype/config
 
 $(OutPath)/$(TargetFile).a: $(ObjectFiles)
 	$(dirp)
@@ -19,7 +19,7 @@ $(OutPath)/$(TargetFile).a: $(ObjectFiles)
 
 install:
 	@cp $(OutPath)/$(TargetFile).a $(ORBISDEV)/usr/lib
-	@mkdir -p $(ORBISDEV)/usr/include/freetype-gl
-	@cp include/*.h $(ORBISDEV)/usr/include/freetype-gl
+	@mkdir -p $(ORBISDEV)/usr/include/orbis/freetype-gl
+	@cp include/*.h $(ORBISDEV)/usr/include/orbis/freetype-gl
 	@echo "$(TargetFile) Installed!"
 

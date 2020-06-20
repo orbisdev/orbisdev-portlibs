@@ -17,6 +17,6 @@ $(OutPath)/$(TargetFile).a: $(ObjectFiles)
 
 install:
 	@cp $(OutPath)/$(TargetFile).a $(ORBISDEV)/usr/lib
-	@mkdir -p $(ORBISDEV)/usr/include/MiniAPI
-	@cp include/*.h $(ORBISDEV)/usr/include/MiniAPI
+	@mkdir -p $(ORBISDEV)/usr/include/orbis/MiniAPI
+	@cp include/*.h $(ORBISDEV)/usr/include/orbis/MiniAPI
 	@echo "$(TargetFile) Installed!"
