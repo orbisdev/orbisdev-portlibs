@@ -14,15 +14,32 @@
 #include <string.h>
 #include "font-manager.h"
 
-#if defined(__PS4__)
-  #include <debugnet.h>
-  #include <orbisNfs.h>
 
-#else
+#if defined (__PS4__)
 
+#include <ps4sdk.h>
+#include <orbisNfs.h>
+#include <debugnet.h>
+#define  fprintf  debugNetPrintf
+#define  ERROR    DEBUGNET_ERROR
+#define  DEBUG    DEBUGNET_DEBUG
+#define  INFO     DEBUGNET_INFO
+
+// each orbisNfsGetFileContent() call will update filesize!
+extern size_t _orbisNfs_lastopenFile_size;
+
+
+#else // stdio and fileIO.c
+
+#include <stdio.h>
 #define  debugNetPrintf  fprintf
-#define  DEBUGNET_DEBUG  stderr
-#define  (DEBUGNET_INFO  stdout
+#define  ERROR           stderr
+#define  DEBUG           stdout
+#define  INFO            stdout
+
+unsigned char *orbisFileGetFileContent(const char *filename);
+// each orbisFileGetFileContent() call will update filesize!
+extern size_t _orbisFile_lastopenFile_size;
 
 // ------------------------------------------------------------ file_exists ---
 static int
@@ -38,10 +55,6 @@ file_exists( const char * filename )
 }
 #endif
 
-unsigned char *orbisNfsGetFileContent( const char *filename );
-// each orbisNfsGetFileContent() call will update filesize!
-extern size_t _orbisNfs_lastopenFile_size;
-
 
 // ------------------------------------------------------- font_manager_new ---
 font_manager_t *
@@ -52,7 +65,7 @@ font_manager_new( size_t width, size_t height, size_t depth )
     self = (font_manager_t *) malloc( sizeof(font_manager_t) );
     if( !self )
     {
-        debugNetPrintf(DEBUGNET_DEBUG,
+        fprintf(DEBUG,
                  "line %d: No more memory for allocating data\n", __LINE__ );
         exit( EXIT_FAILURE );
     }
@@ -138,11 +151,18 @@ font_manager_get_from_filename( font_manager_t *self,
         }
     }
 
+    size_t filesize = 0;
     /* load .ttf in memory, we release at font_manager_delete() */
-    void *ttf = orbisNfsGetFileContent(filename);
-    debugNetPrintf(DEBUGNET_INFO, "ttf at %p %ld\n", ttf, _orbisNfs_lastopenFile_size );
+    #if defined(__PS4__)
+      void *ttf =  orbisNfsGetFileContent(filename);
+      filesize  = _orbisNfs_lastopenFile_size;
+    #else // from fileIO.c
+      void *ttf =  orbisFileGetFileContent(filename);
+      filesize  = _orbisFile_lastopenFile_size;
+    #endif
+    fprintf(INFO, "ttf at %p %ld\n", ttf, filesize);
 
-    font = texture_font_new_from_memory( self->atlas, size, ttf, _orbisNfs_lastopenFile_size);
+    font = texture_font_new_from_memory( self->atlas, size, ttf, filesize);
 //  font = texture_font_new_from_file  ( self->atlas, size, filename );
     if( font )
     {
@@ -154,7 +174,7 @@ font_manager_get_from_filename( font_manager_t *self,
         
         return font;
     }
-    debugNetPrintf(DEBUGNET_DEBUG,"Unable to load \"%s\" (size=%.1f)\n", filename, size );
+    fprintf(DEBUG,"Unable to load \"%s\" (size=%.1f)\n", filename, size );
     return 0;
 }
 
@@ -186,7 +206,7 @@ font_manager_get_from_description( font_manager_t *self,
         filename = font_manager_match_description( self, family, size, bold, italic );
         if( !filename )
         {
-            debugNetPrintf(DEBUGNET_DEBUG, "No \"%s (size=%.1f, bold=%d, italic=%d)\" font available.\n",
+            fprintf(DEBUG, "No \"%s (size=%.1f, bold=%d, italic=%d)\" font available.\n",
                      family, size, bold, italic );
             return 0;
         }
@@ -194,7 +214,7 @@ font_manager_get_from_description( font_manager_t *self,
 #endif
 
     filename = strdup( family );
-    debugNetPrintf(DEBUGNET_DEBUG,"font_manager_get_from_filename \"%s\" (size=%.1f)\n", filename, size );
+    fprintf(DEBUG,"font_manager_get_from_filename \"%s\" (size=%.1f)\n", filename, size );
     font = font_manager_get_from_filename( self, filename, size );
 
     free( filename );
@@ -208,7 +228,7 @@ font_manager_get_from_markup( font_manager_t *self,
 {
     assert( self );
     assert( markup );
-    debugNetPrintf(DEBUGNET_DEBUG,"font_manager_get_from_markup: %p, %s %.1f %d %d\n",
+    fprintf(DEBUG,"font_manager_get_from_markup: %p, %s %.1f %d %d\n",
                           self,
                           markup->family, markup->size,
                           markup->bold,   markup->italic);
