@@ -11,7 +11,17 @@ extern "C" {
 namespace ftgl {
 #endif
 
+#if 1
+// Clang Extended Vectors
+typedef float vec2 __attribute__((ext_vector_type(2)));
+typedef float vec3 __attribute__((ext_vector_type(3)));
+typedef float vec4 __attribute__((ext_vector_type(4)));
 
+typedef int  ivec2 __attribute__((ext_vector_type(2)));
+typedef int  ivec3 __attribute__((ext_vector_type(3)));
+typedef int  ivec4 __attribute__((ext_vector_type(4)));
+
+#else
 /**
  * Tuple of 4 ints.
  *
@@ -201,7 +211,7 @@ typedef union
         float t;   /**< Alias for second component */
     };
 } vec2;
-
+#endif
 
 #ifdef __cplusplus
 }

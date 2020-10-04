@@ -21,7 +21,7 @@ texture_atlas_new( const size_t width,
 
     // We want a one pixel border around the whole atlas to avoid any artefact when
     // sampling texture
-    ivec3 node = {{1,1,width-2}};
+    ivec3 node = { 1,1,width-2 };
 
     assert( (depth == 1) || (depth == 3) || (depth == 4) );
     if( self == NULL)
@@ -176,7 +176,7 @@ texture_atlas_get_region( texture_atlas_t * self,
     int y, best_index;
     size_t best_height, best_width;
     ivec3 *node, *prev;
-    ivec4 region = {{0,0,width,height}};
+    ivec4 region = { 0,0,width,height };
     size_t i;
 
     assert( self );
@@ -206,8 +206,8 @@ texture_atlas_get_region( texture_atlas_t * self,
     {
         region.x = -1;
         region.y = -1;
-        region.width = 0;
-        region.height = 0;
+        region.z = 0;
+        region.w = 0;
         return region;
     }
 
@@ -259,7 +259,7 @@ texture_atlas_get_region( texture_atlas_t * self,
 void
 texture_atlas_clear( texture_atlas_t * self )
 {
-    ivec3 node = {{1,1,1}};
+    ivec3 node = { 1,1,1 };
 
     assert( self );
     assert( self->data );

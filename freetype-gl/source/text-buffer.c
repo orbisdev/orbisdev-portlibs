@@ -13,15 +13,27 @@
 #include "text-buffer.h"
 #include "utf8-utils.h"
 
-#if defined(__PS4__)
+
+#if defined (__ORBIS__)
+
+#include <ps4sdk.h>
 #include <debugnet.h>
+#define  fprintf  debugNetPrintf
+#define  ERROR    DEBUGNET_ERROR
+#define  DEBUG    DEBUGNET_DEBUG
+#define  INFO     DEBUGNET_INFO
 
 #else
-#define  debugNetPrintf  fprintf
-#define  DEBUG  stderr
-#define  INFO   stdout
 
-#endif
+#include <stdio.h>
+#define  debugNetPrintf  fprintf
+#define  ERROR           stderr
+#define  DEBUG           stdout
+#define  INFO            stdout
+#include <GLES2/gl2.h>
+
+#endif // defined (__ORBIS__)
+
 
 #define SET_GLYPH_VERTEX(value,x0,y0,z0,s0,t0,r,g,b,a,sh,gm) { \
     glyph_vertex_t *gv=&value;                                 \
@@ -46,10 +58,10 @@ text_buffer_new( )
     self->base_color.a = 1.0;
     self->line_descender = 0;
     self->lines = vector_new( sizeof(line_info_t) );
-    self->bounds.left   = 0.0;
-    self->bounds.top    = 0.0;
-    self->bounds.width  = 0.0;
-    self->bounds.height = 0.0;
+    self->bounds.x = 0.0; //left
+    self->bounds.y = 0.0; //top
+    self->bounds.z = 0.0; //width
+    self->bounds.w = 0.0; //height
     return self;
 }
 
@@ -73,10 +85,10 @@ text_buffer_clear( text_buffer_t * self )
     self->line_ascender = 0;
     self->line_descender = 0;
     vector_clear( self->lines );
-    self->bounds.left   = 0.0;
-    self->bounds.top    = 0.0;
-    self->bounds.width  = 0.0;
-    self->bounds.height = 0.0;
+    self->bounds.x = 0.0;
+    self->bounds.y = 0.0;
+    self->bounds.z = 0.0;
+    self->bounds.w = 0.0;
 }
 
 // ----------------------------------------------------------------------------
@@ -114,7 +126,7 @@ text_buffer_move_last_line( text_buffer_t * self, float dy )
     for( i=self->line_start; i < vector_size( self->buffer->items ); ++i )
     {
         ivec4 *item = (ivec4 *) vector_get( self->buffer->items, i);
-        for( j=item->vstart; j<item->vstart+item->vcount; ++j)
+        for( j=item->x; j<item->x+item->y; ++j)
         {
             glyph_vertex_t * vertex =
                 (glyph_vertex_t *)  vector_get( self->buffer->vertices, j );
@@ -144,33 +156,33 @@ text_buffer_finish_line( text_buffer_t * self, vec2 * pen, bool advancePen )
 
     line_info_t line_info;
     line_info.line_start = self->line_start;
-    line_info.bounds.left = line_left;
-    line_info.bounds.top = line_top;
-    line_info.bounds.width = line_width;
-    line_info.bounds.height = line_height;
+    line_info.bounds.x = line_left;
+    line_info.bounds.y = line_top;
+    line_info.bounds.z = line_width;
+    line_info.bounds.w = line_height;
 
     vector_push_back( self->lines,  &line_info);
 
 
-    if (line_left < self->bounds.left)
+    if (line_left < self->bounds.x)
     {
-        self->bounds.left = line_left;
+        self->bounds.x = line_left;
     }
-    if (line_top > self->bounds.top)
+    if (line_top > self->bounds.y)
     {
-        self->bounds.top = line_top;
+        self->bounds.y = line_top;
     }
 
-    float self_right = self->bounds.left + self->bounds.width;
-    float self_bottom = self->bounds.top - self->bounds.height;
+    float self_right = self->bounds.x + self->bounds.z;
+    float self_bottom = self->bounds.y - self->bounds.w;
 
     if (line_right > self_right)
     {
-        self->bounds.width = line_right - self->bounds.left;
+        self->bounds.z = line_right - self->bounds.x;
     }
     if (line_bottom < self_bottom)
     {
-        self->bounds.height = self->bounds.top - line_bottom;
+        self->bounds.w = self->bounds.y - line_bottom;
     }
 
     if ( advancePen )
@@ -191,7 +203,7 @@ text_buffer_add_text( text_buffer_t * self,
                       vec2 * pen, markup_t * markup,
                       const char * text, size_t length )
 {
-    debugNetPrintf(3, "text_buffer_add_text(%p, %p, %p, %s)\n", self, pen, markup, text);
+    fprintf(INFO, "text_buffer_add_text(%p, %p, %p, %s)\n", self, pen, markup, text);
     size_t i;
     const char * prev_character = NULL;
 
@@ -202,21 +214,21 @@ text_buffer_add_text( text_buffer_t * self,
 
     if( !markup->font )
     {
-        debugNetPrintf(3, "Houston, we've got a problem !\n" );
+        fprintf(INFO, "Houston, we've got a problem !\n" );
         return;
     }
 
     if( length == 0 )
     {
         length = utf8_strlen(text);
-        //debugNetPrintf(DEBUG, "text: %s, length:%zu\n", text, length);
+        //fprintf(DEBUG, "text: %s, length:%zu\n", text, length);
     }
     if( vertex_buffer_size( self->buffer ) == 0 )
     {
         self->origin = *pen;
         self->line_left = pen->x;
-        self->bounds.left = pen->x;
-        self->bounds.top = pen->y;
+        self->bounds.x = pen->x;
+        self->bounds.y = pen->y;
     }
     else
     {
@@ -315,7 +327,7 @@ text_buffer_add_char( text_buffer_t * self,
     pen->x += kerning;
 
     // Background
-    if( markup->background_color.alpha > 0 )
+    if( markup->background_color.a > 0 )
     {
         //debugNetPrintf(DEBUG,"Background\n");
         float r = markup->background_color.r;
@@ -453,10 +465,10 @@ text_buffer_add_char( text_buffer_t * self,
     {
         //debugNetPrintf(DEBUG,"Actual glyph\n");
         // Actual glyph
-        float r = markup->foreground_color.red;
-        float g = markup->foreground_color.green;
-        float b = markup->foreground_color.blue;
-        float a = markup->foreground_color.alpha;
+        float r = markup->foreground_color.r;
+        float g = markup->foreground_color.g;
+        float b = markup->foreground_color.b;
+        float a = markup->foreground_color.a;
         float x0 = ( pen->x + glyph->offset_x );
         float y0 = (float)(int)( pen->y + glyph->offset_y );
         float x1 = ( x0 + glyph->width );
@@ -511,8 +523,8 @@ text_buffer_align( text_buffer_t * self, vec2 * pen,
     float line_left, line_right, line_center;
     float dx;
 
-    self_left = self->bounds.left;
-    self_right = self->bounds.left + self->bounds.width;
+    self_left = self->bounds.x;
+    self_right = self->bounds.x + self->bounds.z;
     self_center = (self_left + self_right) / 2;
 
     line_info_t* line_info;
@@ -532,7 +544,7 @@ text_buffer_align( text_buffer_t * self, vec2 * pen,
             line_end = vector_size( self->buffer->items );
         }
 
-        line_right = line_info->bounds.left + line_info->bounds.width;
+        line_right = line_info->bounds.x + line_info->bounds.z;
 
         if ( ALIGN_RIGHT == alignment )
         {
@@ -540,7 +552,7 @@ text_buffer_align( text_buffer_t * self, vec2 * pen,
         }
         else // ALIGN_CENTER
         {
-            line_left = line_info->bounds.left;
+            line_left = line_info->bounds.x;
             line_center = (line_left + line_right) / 2;
             dx = self_center - line_center;
         }
@@ -550,7 +562,7 @@ text_buffer_align( text_buffer_t * self, vec2 * pen,
         for( j=line_info->line_start; j < line_end; ++j )
         {
             ivec4 *item = (ivec4 *) vector_get( self->buffer->items, j);
-            for( k=item->vstart; k<item->vstart+item->vcount; ++k)
+            for( k=item->x; k<item->x+item->y; ++k)
             {
                 glyph_vertex_t * vertex =
                                    (glyph_vertex_t *)vector_get( self->buffer->vertices, k );
