@@ -23,7 +23,7 @@
 #elif defined(__ANDROID__)
 #  include <GLES3/gl3.h>
 #elif defined(__PS4__)
-#  include <orbisGl2.h>
+#  include <orbisGl.h>
 #else
 //#  include <GL/glew.h>  /// XXX avoid GLEW: strange behaviors on glUseProgram()
 #  include <GLES2/gl2.h>
