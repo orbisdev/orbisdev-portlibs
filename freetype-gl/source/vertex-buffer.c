@@ -393,6 +393,14 @@ vertex_buffer_render_finish ( vertex_buffer_t *self )
         }
         else
         {
+            /* Piglet needs a GLuint in range [0-MAX_VERTEX_ATTRIBUTE],
+               so we just don't let Piglet reach the call below :shrug: */
+            if(attribute->index == -1) continue;
+
+            if(attribute->index > MAX_VERTEX_ATTRIBUTE)
+            {   // but if for some unknown reason it passes, tell us!
+                printf("%s %d\n", __FUNCTION__, attribute->index);
+            }
             glDisableVertexAttribArray( attribute->index );
         }
     }
